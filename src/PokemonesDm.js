@@ -1,16 +1,10 @@
-import { LitElement} from 'lit-element';
-
+import { LitElement } from 'lit-element';
 
 export class PokemonesDm extends LitElement {
-
-    async fetchPokemon() {
+  async fetchPokemon() {
     try {
-      console.log('Iniciando fetch de Pokémon');
       const response = await fetch('https://pokeapi.co/api/v2/pokemon?offset=0&limit=50');
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
 
       const data = await response.json();
       const pokemonList = await Promise.all(data.results.map(async (pokemon) => {
@@ -22,13 +16,20 @@ export class PokemonesDm extends LitElement {
           tipos: pokemonDetails.types.map(typeInfo => typeInfo.type.name).join(', '),
         };
       }));
-
-      this.pokemonData = pokemonList;
-      this.loading = false;
+      this.dispatchEvent(new CustomEvent('pokemon-data-loaded', {
+        detail: pokemonList,
+        bubbles: true,
+        composed: true
+      }));
     } catch (error) {
       console.error('Error al obtener datos de Pokémon:', error);
-      this.loading = false;
     }
   }
-  
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.fetchPokemon(); 
+  }
 }
+
+customElements.define('pokemones-dm', PokemonesDm);
