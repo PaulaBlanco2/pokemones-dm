@@ -7,24 +7,29 @@ export class PokemonesDm extends LitElement {
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
 
       const data = await response.json();
-      const pokemonList = await Promise.all(
-        data.results.map(async (pokemon) => {
-          const res = await fetch(pokemon.url);
-          const pokemonDetails = await res.json();
-          return {
-            nombre: pokemonDetails.name,
-            imagen: pokemonDetails.sprites.front_default,
-            tipos: pokemonDetails.types.map((typeInfo) => typeInfo.type.name).join(', '),
-          };
-        })
-      );
+      const pokemonList = await Promise.all(data.results.map(async (pokemon) => {
+        const res = await fetch(pokemon.url);
+        const pokemonDetails = await res.json();
+        return {
+          nombre: pokemonDetails.name,
+          imagen: pokemonDetails.sprites.front_default,
+          tipos: pokemonDetails.types.map(typeInfo => typeInfo.type.name).join(', '),
+        };
+      }));
 
-      return pokemonList; // Cambiado para devolver los datos
+      // Emitir el evento con los datos cargados
+      this.dispatchEvent(new CustomEvent('pokemon-data-loaded', {
+        detail: pokemonList,
+        bubbles: true,
+        composed: true,
+      }));
     } catch (error) {
       console.error('Error al obtener datos de Pokémon:', error);
-      return [];
     }
   }
-}
 
-customElements.define('pokemones-dm', PokemonesDm);
+  connectedCallback() {
+    super.connectedCallback();
+    this.fetchPokemon(); // Llamar a la carga de datos cuando el componente se conecte
+  }
+}
