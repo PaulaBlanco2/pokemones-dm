@@ -33,26 +33,32 @@ export class PokemonesDm extends LitElement {
   }
 
 
-  async fetchPokemonDetails(pokemonId) {
+  async fetchPokemonDetails(pokemonName) {
     try {
-      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}/`);
+      // Solicita los detalles del Pokémon usando el nombre en lugar del ID
+      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonName.toLowerCase()}/`);
+      if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+  
       const data = await response.json();
       const pokemonDetails = {
         name: data.name,
         image: data.sprites.front_default,
         types: data.types.map(typeInfo => typeInfo.type.name).join(', '),
       };
-
-      const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${pokemonId}/`);
+  
+      // Solicita los datos de la especie para obtener la cadena de evolución
+      const speciesResponse = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${data.id}/`);
       const speciesData = await speciesResponse.json();
       const evolutionChainUrl = speciesData.evolution_chain.url;
-
+  
+      // Solicita la cadena de evolución y extrae las evoluciones
       const evolutionResponse = await fetch(evolutionChainUrl);
       const evolutionData = await evolutionResponse.json();
       const evolutions = await this.extractEvolutionsWithImages(evolutionData.chain);
-
+  
       const noEvolutionsMessage = evolutions.length === 0 ? 'Este Pokémon no tiene evoluciones.' : '';
-
+  
+      // Lanza el evento con los datos completos
       this.dispatchEvent(new CustomEvent('pokemon-details-loaded', {
         detail: { pokemonDetails, evolutions, noEvolutionsMessage },
         bubbles: true,
@@ -62,6 +68,7 @@ export class PokemonesDm extends LitElement {
       console.error('Error al obtener detalles del Pokémon:', error);
     }
   }
+  
 
   async extractEvolutionsWithImages(chain) {
     const evolutions = [];
